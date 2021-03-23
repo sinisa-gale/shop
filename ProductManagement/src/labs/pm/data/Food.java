@@ -36,7 +36,7 @@ public class Food extends Product {
         return bestBefore;
     }
 
-    public Food(int id, String name, BigDecimal price, Rating rating, LocalDate bestBefore) {
+    Food(int id, String name, BigDecimal price, Rating rating, LocalDate bestBefore) {
         super(id, name, price, rating);
         this.bestBefore = bestBefore;
     }
@@ -49,6 +49,11 @@ public class Food extends Product {
     @Override
     public BigDecimal getDiscount() {
         return bestBefore.isEqual(LocalDate.now()) ? super.getDiscount() : BigDecimal.ZERO; //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public Product applyRating(Rating newRating) {
+        return new Food(getId(), getName(), getPrice(), newRating, bestBefore);
     }
 
 }
