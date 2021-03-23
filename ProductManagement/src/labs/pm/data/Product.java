@@ -35,7 +35,7 @@ public class Product {
     public Product() {
         this(0, "No name", BigDecimal.ZERO);
     }
-    
+
     public Product(int id, String name, BigDecimal price, Rating rating) {
         this.id = id;
         this.name = name;
@@ -54,7 +54,6 @@ public class Product {
 //    public void setId(int id) {
 //        this.id = id;
 //    }
-
     public String getName() {
         return name;
     }
@@ -62,7 +61,6 @@ public class Product {
 //    public void setName(String name) {
 //        this.name = name;
 //    }
-
     public BigDecimal getPrice() {
         return price;
     }
@@ -70,7 +68,6 @@ public class Product {
 //    public void setPrice(BigDecimal price) {
 //        this.price = price;
 //    }
-
     public BigDecimal getDiscount() {
         return price.multiply(DISCOUNT_RATE).setScale(2, HALF_UP);
     }
@@ -78,9 +75,15 @@ public class Product {
     public Rating getRating() {
         return rating;
     }
-    
+
     public Product applyRating(Rating newRating) {
         return new Product(id, name, price, newRating);
     }
 
+    @Override
+    public String toString() {
+        return id + ", " + name + ", " + price + ", " + getDiscount() + ", " + rating.getStars();
+    }
+
+    
 }
