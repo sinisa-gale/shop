@@ -46,4 +46,9 @@ public class Food extends Product {
         return super.toString() + ", " + bestBefore;
     }
 
+    @Override
+    public BigDecimal getDiscount() {
+        return bestBefore.isEqual(LocalDate.now()) ? super.getDiscount() : BigDecimal.ZERO; //To change body of generated methods, choose Tools | Templates.
+    }
+
 }
