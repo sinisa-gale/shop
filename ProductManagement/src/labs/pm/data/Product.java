@@ -25,7 +25,7 @@ import static labs.pm.data.Rating.*;
  *
  * @author Sinisa
  */
-public abstract class Product {
+public abstract class Product implements Rateable<Product> {
 
     public static final BigDecimal DISCOUNT_RATE = BigDecimal.valueOf(0.1);
     private int id;
@@ -36,7 +36,6 @@ public abstract class Product {
 //    Product() {
 //        this(0, "No name", BigDecimal.ZERO);
 //    }
-
     Product(int id, String name, BigDecimal price, Rating rating) {
         this.id = id;
         this.name = name;
@@ -73,12 +72,12 @@ public abstract class Product {
         return price.multiply(DISCOUNT_RATE).setScale(2, HALF_UP);
     }
 
+    @Override
     public Rating getRating() {
         return rating;
     }
 
-    public abstract Product applyRating(Rating newRating);
-
+//    public abstract Product applyRating(Rating newRating);
     @Override
     public String toString() {
         return id + ", " + name + ", " + price + ", " + getDiscount() + ", " + rating.getStars();
