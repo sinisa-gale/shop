@@ -33,7 +33,7 @@ public abstract class Product implements Rateable<Product> {
     private String name;
     private BigDecimal price;
     private Rating rating;
-    private LocalDate bestBefore;
+    private LocalDate bestBefore = LocalDate.now();
 
 //    Product() {
 //        this(0, "No name", BigDecimal.ZERO);
