@@ -35,18 +35,22 @@ import java.util.ResourceBundle;
  * @author Sinisa
  */
 public class ProductManager {
-    
+
     private Map<Product, List<Review>> products = new HashMap<>();
     private Locale locale;
     private ResourceBundle resources;
     private DateTimeFormatter dateFormat;
     private NumberFormat moneyFormat;
-    
+
     public ProductManager(Locale locale) {
         this.locale = locale;
         resources = ResourceBundle.getBundle("labs.pm.data.resources", locale);
         dateFormat = DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT).localizedBy(locale);
         moneyFormat = NumberFormat.getCurrencyInstance(locale);
+    }
+
+    public void printProductReport(int id) {
+        printProductReport(findProduct(id));
     }
     
     public void printProductReport(Product product) {
@@ -70,18 +74,22 @@ public class ProductManager {
         }
         System.out.println(txt);
     }
-    
+
     public Product createProduct(int id, String name, BigDecimal price, Rating rating,
             LocalDate bestBefore) {
         Product product = new Food(id, name, price, rating, bestBefore);
         products.putIfAbsent(product, new ArrayList<>());
         return product;
     }
-    
+
     public Product createProduct(int id, String name, BigDecimal price, Rating rating) {
         Product product = new Drink(id, name, price, rating);
         products.putIfAbsent(product, new ArrayList<>());
         return product;
+    }
+
+    public Product reviewProduct(int id, Rating rating, String comments) {
+        return reviewProduct(findProduct(id), rating, comments);
     }
     
     public Product reviewProduct(Product product, Rating rating, String comments) {
@@ -95,5 +103,16 @@ public class ProductManager {
         product = product.applyRating(Rateable.convert(Math.round((float) sum / reviews.size())));
         products.put(product, reviews);
         return product;
+    }
+
+    public Product findProduct(int id) {
+        Product result = null;
+        for (Product product: products.keySet()) {
+            if (product.getId() == id) {
+                result = product;
+                break;
+            }
+        }
+        return result;
     }
 }
