@@ -20,7 +20,7 @@ package labs.pm.data;
  *
  * @author Sinisa
  */
-public class Review {
+public class Review implements Comparable<Review>{
     private Rating rating;
     private String comments;
 
@@ -42,4 +42,9 @@ public class Review {
         return "Review{" + "rating=" + rating + ", comments=" + comments + '}';
     }
     
+    @Override
+    public int compareTo(Review other) {
+        //throw new UnsupportedOperationException("Not supported yet.");
+        return other.rating.ordinal() - this.rating.ordinal();
+    }
 }
