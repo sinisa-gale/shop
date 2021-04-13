@@ -31,6 +31,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 /**
@@ -41,6 +43,7 @@ public class ProductManager {
     
     private Map<Product, List<Review>> products = new HashMap<>();
     private ResourceFormatter formatter;
+    private static final Logger logger = Logger.getLogger(ProductManager.class.getName());
     private static Map<String, ResourceFormatter> formatters
             = Map.of("en-GB", new ResourceFormatter(Locale.UK),
                     "en-US", new ResourceFormatter(Locale.US),
@@ -66,7 +69,11 @@ public class ProductManager {
     }
     
     public void printProductReport(int id) {
-        printProductReport(findProduct(id));
+        try {
+            printProductReport(findProduct(id));
+        } catch (ProductManagerException ex) {
+            logger.log(Level.INFO, ex.getMessage());
+        }
     }
     
     public void printProductReport(Product product) {
@@ -111,7 +118,12 @@ public class ProductManager {
     }
     
     public Product reviewProduct(int id, Rating rating, String comments) {
-        return reviewProduct(findProduct(id), rating, comments);
+        try {
+            return reviewProduct(findProduct(id), rating, comments);
+        } catch (ProductManagerException ex) {
+            logger.log(Level.INFO, ex.getMessage());
+        }
+        return null;
     }
     
     public Product reviewProduct(Product product, Rating rating, String comments) {
@@ -143,12 +155,13 @@ public class ProductManager {
 //        }
 //        return result;
 //    }
-    public Product findProduct(int id) {
+    public Product findProduct(int id) throws ProductManagerException {
         return products.keySet()
                 .stream()
                 .filter(p -> p.getId() == id)
                 .findFirst()
-                .get();
+                .orElseThrow(
+                        ()->new ProductManagerException("Product with id"+id+" not found."));
     }
     
     public Map<String, String> getDiscounts() {
