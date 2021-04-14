@@ -33,8 +33,18 @@ public class Shop {
     public static void main(String[] args) {
         // TODO code application logic here
         ProductManager pm = new ProductManager("en-GB");
+//        pm.parseProduct("D,101,Tea,1.99,0,2019-09-19");
+//        pm.parseReview("101,4,Nice hot cup of tea");
+//        pm.parseReview("101,2,Rather weak tea");
+//        pm.parseReview("101,4,Good tea");
+//        pm.parseReview("101,5,Perfect tea");
+//        pm.parseReview("101,3,Just add some lemon");
+//        
+//        pm.parseProduct("F,103,Cake,3.99,0,2019-09-19");
+        pm.printProductReport(101);
+        pm.printProductReport(103);
         //   pm.changeLocale("ru-RU");
-        Product p1 = pm.createProduct(101, "Tea", BigDecimal.valueOf(1.99), Rating.NOT_RATED);
+        //Product p1 = pm.createProduct(101, "Tea", BigDecimal.valueOf(1.99), Rating.NOT_RATED);
         //  p1 = pm.reviewProduct(p1, Rating.FOUR_STAR, "Nice hot cup of tea");
         //  p1 = pm.reviewProduct(p1, Rating.TWO_STAR, "Rather weak tea");
         //  p1 = pm.reviewProduct(p1, Rating.FOUR_STAR, "Fine tea");
@@ -44,7 +54,7 @@ public class Shop {
 
         //   Product p2 = pm.createProduct(102, "Coffee", BigDecimal.valueOf(1.99), Rating.FOUR_STAR);
 //        Product p3 = pm.createProduct(103, "Cake", BigDecimal.valueOf(3.99), Rating.FIVE_STAR, LocalDate.now().plusDays(2));
-         pm.printProductReport(101);
+        // pm.printProductReport(101);
       //  pm.printProducts((p1, p2) -> p1.getPrice().compareTo(p2.getPrice()));
       //  pm.printProducts((p3, p2) -> p2.getRating().ordinal());
 //        Product p4 = pm.createProduct(105, "Cookie", BigDecimal.valueOf(3.99), Rating.TWO_STAR, LocalDate.now());

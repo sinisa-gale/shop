@@ -16,7 +16,15 @@
  */
 package labs.pm.data;
 
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.text.MessageFormat;
 import java.text.NumberFormat;
 import java.text.ParseException;
@@ -31,6 +39,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.logging.Level;
@@ -49,6 +58,9 @@ public class ProductManager {
             .getString("review.data.format"));
     private MessageFormat productFormat = new MessageFormat(config
             .getString("product.data.format"));
+    private Path reportsFolder = Path.of(config.getString("reports.folder"));
+    private Path dataFolder = Path.of(config.getString("data.folder"));
+    private Path tempFolder = Path.of(config.getString("temp.folder"));
     private ResourceFormatter formatter;
     private static final Logger logger = Logger.getLogger(ProductManager.class.getName());
     private static Map<String, ResourceFormatter> formatters
@@ -60,10 +72,12 @@ public class ProductManager {
 
     public ProductManager(Locale locale) {
         this(locale.toLanguageTag());
+        
     }
 
     public ProductManager(String languageTag) {
         changeLocale(languageTag);
+        loadAllData();
     }
 
     public void changeLocale(String languageTag) {
@@ -80,24 +94,30 @@ public class ProductManager {
             printProductReport(findProduct(id));
         } catch (ProductManagerException ex) {
             logger.log(Level.INFO, ex.getMessage());
+        } catch (IOException ex) {
+            logger.log(Level.SEVERE, "Error printing product report " + ex.getMessage(), ex);
         }
     }
 
-    public void printProductReport(Product product) {
+    public void printProductReport(Product product) throws UnsupportedEncodingException, IOException {
         List<Review> reviews = products.get(product);
-        StringBuilder txt = new StringBuilder();
-        txt.append(formatter.formatProduct(product));
-        txt.append('\n');
         Collections.sort(reviews);
-        for (Review review : reviews) {
-            txt.append(formatter.formatReview(review));
-            txt.append('\n');
+        // StringBuilder txt = new StringBuilder();
+        Path productFile = reportsFolder.resolve(MessageFormat.format(
+                config.getString("report.file"), product.getId()));
+        try ( PrintWriter out = new PrintWriter(
+                new OutputStreamWriter(
+                        Files.newOutputStream(
+                                productFile, StandardOpenOption.CREATE), "UTF-8"))) {
+            out.append(formatter.formatProduct(product) + System.lineSeparator());
+            if (reviews.isEmpty()) {
+                out.append(formatter.getText("no.reviews") + System.lineSeparator());
+            } else {
+                out.append(reviews.stream()
+                        .map(r -> formatter.formatReview(r) + System.lineSeparator())
+                        .collect(Collectors.joining()));
+            }
         }
-        if (reviews.isEmpty()) {
-            txt.append(formatter.getText("no.reviews"));
-            txt.append('\n');
-        }
-        System.out.println(txt);
     }
 
     public void printProducts(Comparator<Product> sorter) {
@@ -111,18 +131,98 @@ public class ProductManager {
         System.out.println(txt);
     }
 
-    public void parseReview(String text) {
+//    public void parseReview(String text) {
+//        try {
+//            Object[] values = reviewFormat.parse(text);
+//            reviewProduct(Integer.parseInt((String) values[0]),
+//                    Rateable.convert(Integer.parseInt((String) values[1])),
+//                    (String) values[2]);
+//        } catch (ParseException | NumberFormatException ex) {
+//            logger.log(Level.WARNING, "Error parsing text " + text, ex.getMessage());
+//        }
+//    }
+    private void loadAllData() {
         try {
-            Object[] values = reviewFormat.parse(text);
-            reviewProduct(Integer.parseInt((String) values[0]),
-                    Rateable.convert(Integer.parseInt((String) values[1])),
-                    (String) values[2]);
-        } catch (ParseException | NumberFormatException ex) {
-            logger.log(Level.WARNING, "Error parsing text " + text, ex.getMessage());
+            products = Files.list(dataFolder)
+                    .filter(file->file.getFileName().toString().startsWith("product"))
+                    .map(file->loadProduct(file))
+                    .filter(product->product!=null)
+                    .collect(Collectors.toMap(product->product,
+                            product->loadReviews(product)));
+        } catch (IOException ex) {
+            logger.log(Level.SEVERE, "Error loading data "+ex.getMessage(), ex);
         }
     }
 
-    public void parseProduct(String text) {
+    private Product loadProduct(Path file) {
+        Product product = null;
+        try {
+            product = parseProduct(
+                    Files.lines(dataFolder.resolve(file), Charset.forName("UTF-8"))
+                            .findFirst().orElseThrow()
+            );
+        } catch (IOException | NoSuchElementException ex) {
+            logger.log(Level.WARNING, "Error loading product " + ex.getMessage(), ex);
+        }
+        return product;
+    }
+
+    private List<Review> loadReviews(Product product) {
+        List<Review> reviews = null;
+        Path file
+                = reportsFolder.resolve(
+                        MessageFormat.format(
+                                config.getString("reviews.data.file"), product.getId()));
+        if (Files.notExists(file)) {
+            reviews = new ArrayList<>();
+        } else {
+            try {
+                reviews = Files.lines(file, Charset.forName("UTF-8"))
+                        .map(text -> parseReview(text))
+                        .filter(review -> review != null)
+                        .collect(Collectors.toList());
+            } catch (IOException ex) {
+                logger.log(Level.WARNING, "Erroe loading reviews " + ex.getMessage(), ex);
+            }
+        }
+        return reviews;
+    }
+
+    private Review parseReview(String text) {
+        Review review = null;
+        try {
+            Object[] values = reviewFormat.parse(text);
+            review = new Review(
+                    Rateable.convert(Integer.parseInt((String) values[0])),
+                    (String) values[1]
+            );
+        } catch (ParseException | NumberFormatException ex) {
+            logger.log(Level.WARNING, "Error parsing text " + text, ex.getMessage());
+        }
+        return null;
+    }
+
+//    public void parseProduct(String text) {
+//        try {
+//            Object[] values = productFormat.parse(text);
+//            int id = Integer.parseInt((String) values[1]);
+//            String name = (String) values[2];
+//            BigDecimal price = BigDecimal.valueOf(Double.parseDouble((String) values[3]));
+//            Rating rating = Rateable.convert(Integer.parseInt((String) values[4]));
+//            switch ((String) values[0]) {
+//                case "D":
+//                    createProduct(id, name, price, rating);
+//                    break;
+//                case "F":
+//                    LocalDate bestBefore = LocalDate.parse((String) values[5]);
+//                    createProduct(id, name, price, rating, bestBefore);
+//            }
+//        } catch (ParseException | NumberFormatException | DateTimeParseException ex) {
+//            logger.log(Level.WARNING, "Error parsing text " + text, ex.getMessage());
+//        }
+//    }
+    private Product parseProduct(String text) {
+        Product product = null;
         try {
             Object[] values = productFormat.parse(text);
             int id = Integer.parseInt((String) values[1]);
@@ -131,15 +231,16 @@ public class ProductManager {
             Rating rating = Rateable.convert(Integer.parseInt((String) values[4]));
             switch ((String) values[0]) {
                 case "D":
-                    createProduct(id, name, price, rating);
+                    product = new Drink(id, name, price, rating);
                     break;
                 case "F":
-                    LocalDate bestBefore = LocalDate.parse((String)values[5]);
-                    createProduct(id, name, price, rating, bestBefore);
+                    LocalDate bestBefore = LocalDate.parse((String) values[5]);
+                    product = new Food(id, name, price, rating, bestBefore);
             }
         } catch (ParseException | NumberFormatException | DateTimeParseException ex) {
             logger.log(Level.WARNING, "Error parsing text " + text, ex.getMessage());
         }
+        return product;
     }
 
     public Product createProduct(int id, String name, BigDecimal price, Rating rating,
